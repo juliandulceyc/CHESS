@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Online</title>
+    <link rel="stylesheet" href="../public/css/main.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">♙ Bogotá Chess Club</div>
+        <!-- Section that shows the user information and the logout botton -->
+        <div class="user-info">
+            <span>Welcome, <span id="username"></span></span>
+            <!-- logout button who calls the function logout() -->
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+        <div>
+            <p class="subtitle">Play chess online with your friends!</p>
+            <!-- div to show error messages -->
+            <div id="error" class="error"></div>
+            <!-- button to create a new game -->
+            <button onclick="createGame()" class="create-game-btn">Create Game</button>
+            <!-- visual separator -->
+            <div class="divider">or</div>
+            <!-- group of elements to join an existing game -->
+            <div class="input-group">
+                <input type="text" id="gameCodeInput" placeholder="Enter the game code" required>
+                <!-- button to join the game -->
+                <button onclick="joinGame()" class="create-game-btn">Join Game</button>
+            </div>
+            <!-- Section that shows the game created code-->
+            <div id="gameCodeDisplay" class="game-code-display">
+                <div>Share this code with your friend:</div>
+                <div id="gameCode" class="game-code"></div>
+                <button onclick="copyGameCode()" class="copy-button">Copy Code</button>
+            </div>
+        </div>
+        <script>
+            window.addEventListener('DOMContentLoaded', async () => {
+                // et the username from th elocal storage 
+                try {
+                    const response = await fetch('/auth/me');
+                    const data = await response.json();
+                    if (data.success) {
+                        document.getElementById('username').textContent = data.username;
+                    } else {
+                        window.location.href = '/login'
+                    }
+                } catch (err) {
+                    console.error('Error getting user information', err);
+                }
+
+            });
+
+            // async function to close the user session
+            
+        </script>
+</body>
+
+</html>

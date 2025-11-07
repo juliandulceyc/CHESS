@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Chess online</title>
+    <link rel="stylesheet" href="../public/css/main.css">
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="logo">♙</div>
+        <h2>Login</h2>
+        <div id="errorMessage" class="error-message"></div>
+
+        <form id="loginForm">
+            <!--Campo para el nombre de usuario-->
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <!--Campo para la contraseña-->
+            <div class="form-group">
+                <label for="password">Username</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <!--Botón para enviar el formulario-->
+            <button type="submit">Login</button>
+        </form>
+        <div class="register-link">
+            Don't have an account? <a href="/register">Register here</a>
+        </div>
+    </div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const errorMessage = document.getElementById('errorMessage');
+
+            try {
+                //se envía el formulario a la ruta /login
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }, 
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value
+
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    errorMessage.textContent = data.message;
+                    errorMessage.style.display = 'block';
+                }
+            } catch (err) {
+                errorMessage.textContent = 'Error logging in. Please try again.';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+
+</html>
