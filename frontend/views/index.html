@@ -56,7 +56,112 @@
             });
 
             // async function to close the user session
-            
+            async function logout() {
+                try {
+                    const response = await fetch('/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    if (data.succes) {
+                        window.location.href = '/login';
+                    } else {
+                        showError('Error logging out');
+                    }
+                } catch (err) {
+                    showError('Error logging out')
+                }
+            }
+
+            // function to show error messages in the user interface
+            function showError(message) {
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => {
+                    errorDiv.textContent = '';
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+            // function to generate a randome game code 
+            function generateGameCode() {
+                return Math.random().toString(36).substring(2, 8).toUpperCase();
+            }
+            // async function to create a new game 
+            async function createGame() {
+                const gameCode = generateGameCode();
+                try {
+                    const response = await fetch('/game/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ gameCode: gameCode, timeControl: 10 })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = `/game/${gameCode}`
+                    } else {
+                        showError(data.message || 'Error creating game');
+                    }
+                } catch (err) {
+                    showError('Error creating game');
+                }
+            }
+            // async function to join an existing game 
+            async function joinGame() {
+                const gameCode = document.getElementById('gameCodeInput').value.trim().toUpperCase();
+                if (!gameCode) {
+                    showError('Please enter a game code');
+                    return;
+                }
+                try {
+                    const response = await fetch('game/join', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ gameCode: gameCode })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = `/game/${gameCode}`;
+                    } else {
+                        showError(data.message || 'Error joining game');
+                    }
+                } catch (err) {
+                    showError('Error joining game');
+                }
+            }
+            // function to copy the game code to the clipboard
+            function copyGameCode() {
+                const gameCode = document.getElementById('gameCode').textContent;
+                navigator.clipboard.write(gameCode).then(() => {
+                    const copyButton = document.querySelector('.copy-button');
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Error copying game code', error);
+                    showError('Error copying game code');
+                });
+            }
+            // verify if there are any errors in the URL 
+            const urlParrams = new URLSearchParams(window.location.search);
+            const error = urlParrams.get('error');
+            if (error) {
+                showError(
+                    error === 'noCode' ? 'Please enter a geme code':
+                    error === 'invalidCode' ? 'Invalid game code' :
+                    error === 'gameNotFound' ? 'Game not found' :
+                    error === 'gameFull' ? 'Game is full' : 'Error joining game'
+                )
+            }
         </script>
 </body>
 
