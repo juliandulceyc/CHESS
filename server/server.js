@@ -1,38 +1,97 @@
 // needed imports 
-const express = require('express');
 const path = require('path');
-const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
-require('dotenv').config();
-
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const http = require('http'),
+    express = require('express'),
+    session = require('express-session'),
+    pgSession = require('connect-pg-simple')(session),
+    socket = require('socket.io');
+const config = require('../config');
+const { pool } = require('./database/db')
+const { requireAuth, setUserData } = require('./middleware/auth');
+const authRoutes = require('./routes/auth');
+const myIo = require('./sockets/io'),
+    routes = require('./routes/routes');
+const app = express(),
+    server = http.Server(app),
+    io = socket(server);
 //Middleware 
-
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.urlencoded({ extended: true }));
 
-//Routes for views 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/views/index.html'));
-});
+// Session settings 
+app.use(session({
+    store: new pgSession({
+        pool,
+        tableName: 'session',
+        // clean expired session
+        pruneSessionInterval: 60
+    }),
+    secret: process.env.SESION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        expires: false,
+        rolling: true,
+        maxAge: 3 * 60 * 1000
+    }
+}));
+
+// Server static files
+app.use('/public', express.static(path.join(__dirname, '../frontend/public')));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
+app.use(setUserData);
+
+// View configuration
+app.set('view', path.join(__dirname, '../frontend/views'));
+app.set('view engine', 'html');
+app.engine('html', require('express-handlebars').engine({
+    extname: 'html',
+    defaultLayout: 'false',
+    helpers: {
+        json: function (context) {
+            return JSON.stringify(context);
+        }
+    }
+}));
+
+// public routes
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/views/login.html'))
-});
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/views/register.html'))
+    if (req.session.userId) {
+        return res.redirect('/');
+    }
+    res.render('login');
 });
 
-//basic Socket.io settings
-io.on('connection', (socket) => {
-    console.log('a user connected');
-    socket.on('disconnect', () => {
-        console.log('user disconnected')
+app.get('/register', (req, res) => {
+    if (req.session.userId) {
+        return res.redirect('/');
+    }
+    res.render('regster');
+});
+
+// protected main routes 
+app.get('/', requireAuth, (req, res) => {
+    res.render('index', { user: res.locals.user });
+});
+
+// game routes 
+app.use('games', requireAuth, routes);
+
+// Socket.io configuration
+myIo(io);
+
+//Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error: ', err);
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error'
     });
 });
 
 // Port Setting and server start 
 const PORT = process.env.PORT || 3000;
-
 http.listen(PORT, () => {
     console.log(`server running on port ${PORT}`);
 });
