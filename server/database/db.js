@@ -1,10 +1,15 @@
 const { Pool } = require('pg');
+
+const isLocal = !process.env.PGHOST || process.env.PGHOST === 'localhost';
+
 const dbConfig = {
   user: process.env.PGUSER || 'postgres',
   host: process.env.PGHOST || 'localhost',
   database: process.env.PGDATABASE || 'chessbase',
   password: process.env.PGPASSWORD,
   port: process.env.PGPORT || 5432,
+  //Render
+  ssl: isLocal ? false : { rejectUnauthorized: false }
 };
 
 console.log('Configuracion de DB:', {
@@ -12,6 +17,7 @@ console.log('Configuracion de DB:', {
   host: dbConfig.host,
   database: dbConfig.database,
   port: dbConfig.port,
+  ssl: !!dbConfig.ssl // Muestra true si SSL está activado
 });
 
 const pool = new Pool(dbConfig);
