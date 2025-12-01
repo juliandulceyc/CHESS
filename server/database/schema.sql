@@ -18,4 +18,3 @@ CREATE TABLE session (
 
 -- Create an index on the session table
 CREATE INDEX IDX_session_expire ON session (expire);
-

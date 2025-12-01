@@ -1,31 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Game</title>
-
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script src="/socket.io/socket.io.js"></script>
 
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-
+    
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
-
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 
-    <link rel="stylesheet" href="../public/css/game.css">
+    <link rel="stylesheet" href="/public/css/game.css">
 
     <script>
         const socket = io();
         let playerUsername = '{{username}}';
     </script>
+
 </head>
-
 <body>
+    <div class="game-container">
+        <div class="game-board">
+            <div id="myBoard"></div>
+            <div class="game-status" id="status"></div>
+            <lavel>PGN:</lavel>
+            <div id="pgn"></div>
+        </div>
 
+        <div class="game-info">
+            <div class="timer">
+                <div>
+                    <span class="timer-label">White: </span>
+                    <span class="timer-value" id="whiteTimer">10:00</span>
+                </div>
+                <div>
+                    <span class="timer-label">Black: </span>
+                    <span class="timer-value" id="blackTimer">10:00</span>
+                </div>
+            </div>
+        <div class="game-code-container">
+            <div class="game-code" id="gameCode">Game code: {{gameCode}}</div>
+            <button class="copy-button" onclick="copyGameCode()">Copy</button>
+        </div>
+
+        <button id="readyButton" class="ready-button">Ready to play!</button>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Write a message..."
+                onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <script>
+        let playerColor= '{{color}}';
+        let gameCode = '{{gameCode}}';
+        let timeControl = parseInt('{{timeControl}}');
+        let playerReady = false;
+
+      $('#readyButton').on('click', function(){
+        playerReady =true;
+        $(this).prop('disabled', true).text('waiting for opponent...');
+        socket.emit('playerReady');
+
+      });
+
+      // join the game
+
+      socket.emit('joinGame', {
+        code:gameCode,
+        Color: playerColor,
+        timeControl: timeControl,
+        username: playerUsername
+      });
+
+      // when both players get connected
+      socket.on('playerConnected', function(data) {
+        $('#readyButton').prop('disabled', false);
+        $('#status').text(`Both players connected (${data.white} vs ${data.black}). Click ready when you want to play!`)
+      });
+
+    // handle end of the game by time
+        socket.on('gameOverTime', function(data) {
+                $('#status').text('Game Over - ' + data.winnerUsername + ' wins on time!');
+                $('#readyButton').hide();
+            });
+    // handle player disconnected
+        socket.on('gameOverDisconnect', function(data) {
+                $('#status').text('Game Over - ' + data.username + ' disconnected');
+                $('#readyButton').hide();
+            });
+
+    // update timers
+        socket.on('timeUpdate', function(data) {
+                document.getElementById('whiteTimer').textContent = formatTime(data.white);
+                document.getElementById('blackTimer').textContent = formatTime(data.black);
+            });
+    // auxiliary function to format time (convert seconds to MM:SS)
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds/60);
+        const remainingSeconds = Math.floor(seconds % 60);
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+
+    // function to copy the game code
+
+    function copyGameCode(){
+        navigator.clipboard.writeText(gameCode);
+        alert('Game code copied to clipboard!');
+    }
+
+    </script>
+    
+    <script src="/public/js/index.js"></script>
 </body>
-
 </html>
